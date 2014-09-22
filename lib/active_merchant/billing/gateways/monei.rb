@@ -105,7 +105,7 @@ module ActiveMerchant #:nodoc:
         xml.Payment(:code => code) do
           xml.Presentation do
             xml.Amount amount(money)
-            xml.Currency 'EUR'
+            xml.Currency options[:currency] || currency(money)
             xml.Usage options[:description] || options[:order_id]
           end unless money.nil?
         end

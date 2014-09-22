@@ -132,6 +132,7 @@ module ActiveMerchant #:nodoc:
 
       private
 
+      # Private: Execute purchase or authorize operation
       def execute_new_order(action, money, credit_card, options)
         request = build_request do |xml|
           add_identification_new_order(xml, options)
@@ -143,7 +144,7 @@ module ActiveMerchant #:nodoc:
         commit(request)
       end
 
-
+      # Private: Execute operation that depends on athorization code from previous purchase or authorize operation
       def execute_authorization(action, money, authorization, options)
         request = build_request do |xml|
           add_identification_authorization(xml, authorization, options)
@@ -153,6 +154,7 @@ module ActiveMerchant #:nodoc:
         commit(request)
       end
 
+      # Private: Build XML wrapping code yielding to code to fill the transaction information
       def build_request
         builder = Nokogiri::XML::Builder.new(:encoding => 'UTF-8') do |xml|
           xml.Request(:version => "1.0") do
@@ -170,6 +172,7 @@ module ActiveMerchant #:nodoc:
         builder.to_xml
       end
 
+      # Private: Add identification part to XML for new orders
       def add_identification_new_order(xml, options)
         requires!(options, :order_id)
         xml.Identification do
@@ -177,6 +180,7 @@ module ActiveMerchant #:nodoc:
         end
       end
 
+      # Private: Add identification part to XML for orders that depend on authorization from previous operation
       def add_identification_authorization(xml, authorization, options)
         xml.Identification do
           xml.ReferenceID authorization
@@ -184,6 +188,7 @@ module ActiveMerchant #:nodoc:
         end
       end
 
+      # Private: Add payment part to XML
       def add_payment(xml, action, money, options)
         code = tr_payment_code action
 
@@ -196,6 +201,7 @@ module ActiveMerchant #:nodoc:
         end
       end
 
+      # Private: Add account part to XML
       def add_account(xml, credit_card)
         xml.Account do
           xml.Holder credit_card.name
@@ -206,6 +212,7 @@ module ActiveMerchant #:nodoc:
         end
       end
 
+      # Private: Add customer part to XML
       def add_customer(xml, credit_card, options)
         requires!(options, :billing_address)
         address = options[:billing_address]
@@ -230,6 +237,7 @@ module ActiveMerchant #:nodoc:
         end
       end
 
+      # Private: Parse XML response from Monei servers
       def parse(body)
         xml = Nokogiri::XML(body)
 
@@ -241,6 +249,7 @@ module ActiveMerchant #:nodoc:
         }
       end
 
+      # Private: Send XML transaction to Monei servers and create AM response
       def commit(xml)
         url = (test? ? test_url : live_url)
 
@@ -255,22 +264,27 @@ module ActiveMerchant #:nodoc:
         )
       end
 
+      # Private: Decide success from servers response
       def success_from(response)
         response[:status] == :success or response[:status] == :new
       end
 
+      # Private: Get message from servers response
       def message_from(response)
         response[:message]
       end
 
+      # Private: Get authorization code from servers response
       def authorization_from(response)
         response[:unique_id]
       end
 
+      # Private: Encode POST parameters
       def post_data(xml)
         "load=#{CGI.escape(xml)}"
       end
 
+      # Private: Translate Monei status code to native ruby symbols
       def tr_status_code(code)
         {
             '00' => :success,
@@ -285,6 +299,7 @@ module ActiveMerchant #:nodoc:
         }[code]
       end
 
+      # Private: Translate AM operations to Monei operations codes
       def tr_payment_code(action)
         {
             :purchase => 'CC.DB',

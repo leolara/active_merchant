@@ -2,6 +2,14 @@ require 'nokogiri'
 
 module ActiveMerchant #:nodoc:
   module Billing #:nodoc:
+    #
+    # == Monei gateway
+    # This class implements Monei gateway for Active Merchant. For more information about Monei
+    # gateway please go to http://www.monei.net
+    #
+    # === Setup
+    # In order to set-up the gateway you need four paramaters: sender_id, channel_id, login and pwd.
+    # Request that data to Monei.
     class MoneiGateway < Gateway
       self.test_url = 'https://test.ctpe.io/payment/ctpe'
       self.live_url = 'https://ctpe.io/payment/ctpe'
@@ -13,31 +21,108 @@ module ActiveMerchant #:nodoc:
       self.homepage_url = 'http://www.monei.net/'
       self.display_name = 'Monei'
 
+      # Constructor
+      #
+      # options - Hash containing the gateway credentials, ALL MANDATORY
+      #           :sender_id  Sender ID
+      #           :channel_id Channel ID
+      #           :login      User login
+      #           :pwd        User password
+      #
       def initialize(options={})
         requires!(options, :sender_id, :channel_id, :login, :pwd)
         super
       end
 
-      def purchase(money, credit_card, options={})
+      # Public: Performs purchase operation
+      #
+      # money       - Amount of purchase
+      # credit_card - Credit card
+      # options     - Hash containing purchase options
+      #               :order_id         Merchant created id for the purchase
+      #               :billing_address  Hash with billing address information
+      #               :description      Merchant created purchase description (optional)
+      #               :currency         Sale currency to override money object or default (optional)
+      #               :given            Customer given name to override card holder's (optional)
+      #               :family           Customer family name to override card holder's (optional)
+      #
+      # Returns Active Merchant response object
+      def purchase(money, credit_card, options)
         execute_new_order(:purchase, money, credit_card, options)
       end
 
+      # Public: Performs authorization operation
+      #
+      # money       - Amount to authorize
+      # credit_card - Credit card
+      # options     - Hash containing authorization options
+      #               :order_id         Merchant created id for the authorization
+      #               :billing_address  Hash with billing address information
+      #               :description      Merchant created authorization description (optional)
+      #               :currency         Sale currency to override money object or default (optional)
+      #               :given            Customer given name to override card holder's (optional)
+      #               :family           Customer family name to override card holder's (optional)
+      #
+      # Returns Active Merchant response object
       def authorize(money, credit_card, options={})
         execute_new_order(:authorize, money, credit_card, options)
       end
 
+      # Public: Performs capture operation on previous authorization
+      #
+      # money         - Amount to capture
+      # authorization - Reference to previous authorization, obtained from response object returned by authorize
+      # options       - Hash containing capture options
+      #                 :order_id         Merchant created id for the authorization (optional)
+      #                 :description      Merchant created authorization description (optional)
+      #                 :currency         Sale currency to override money object or default (optional)
+      #
+      # Note: you should pass either order_id or description
+      #
+      # Returns Active Merchant response object
       def capture(money, authorization, options={})
         execute_authorization(:capture, money, authorization, options)
       end
 
+      # Public: Refunds from previous purchase
+      #
+      # money         - Amount to refund
+      # authorization - Reference to previous purchase, obtained from response object returned by purchase
+      # options       - Hash containing refund options
+      #                 :order_id         Merchant created id for the authorization (optional)
+      #                 :description      Merchant created authorization description (optional)
+      #                 :currency         Sale currency to override money object or default (optional)
+      #
+      # Note: you should pass either order_id or description
+      #
+      # Returns Active Merchant response object
       def refund(money, authorization, options={})
         execute_authorization(:refund, money, authorization, options)
       end
 
+      # Public: Voids previous authorization
+      #
+      # authorization - Reference to previous authorization, obtained from response object returned by authorize
+      # options       - Hash containing capture options
+      #                 :order_id         Merchant created id for the authorization (optional)
+      #
+      # Returns Active Merchant response object
       def void(authorization, options={})
         execute_authorization(:void, nil, authorization, options)
       end
 
+      # Public: Verifies credit card. Does this by doing a authorization of 1.00 Euro and then voiding it.
+      #
+      # credit_card - Credit card
+      # options     - Hash containing authorization options
+      #               :order_id         Merchant created id for the authorization
+      #               :billing_address  Hash with billing address information
+      #               :description      Merchant created authorization description (optional)
+      #               :currency         Sale currency to override money object or default (optional)
+      #               :given            Customer given name to override card holder's (optional)
+      #               :family           Customer family name to override card holder's (optional)
+      #
+      # Returns Active Merchant response object of Authorization operation
       def verify(credit_card, options={})
         MultiResponse.run(:use_first_response) do |r|
           r.process { authorize(100, credit_card, options) }

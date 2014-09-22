@@ -8,7 +8,7 @@ module ActiveMerchant #:nodoc:
 
       self.supported_countries = ['ES']
       self.default_currency = 'EUR'
-      self.supported_cardtypes = [:visa, :master]
+      self.supported_cardtypes = [:visa, :master, :maestro]
 
       self.homepage_url = 'http://www.monei.net/'
       self.display_name = 'Monei'

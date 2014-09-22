@@ -8,3 +8,6 @@ Gemfile*.lock
 .rbx/
 *.gem
 .rvmrc
+
+# Ignore IDEs directories
+.idea/
